@@ -1,0 +1,3 @@
+server int sv_pnp_powerChance = 2;
+server int sv_pnp_maxPowers = 4;
+server int sv_pnp_maxPerks = 4;

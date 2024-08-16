@@ -1,0 +1,833 @@
+version "4.11"
+
+class PerksPowers : EventHandler {
+	int powersSpawned;
+	
+	static const class<PNP_Power> powers[] = {
+		"PNP_PowerInstakill",
+		"PNP_PowerMaxAmmo",
+		"PNP_PowerNuke",
+		"PNP_PowerDeathMachine"
+	};
+	
+	override void WorldThingSpawned(WorldEvent e) {
+		let mo = Inventory(e.thing);
+		
+		if (mo && (mo.bBigPowerup || (mo is "Health" && mo.amount >= 100) || (mo is "CustomInventory" && mo.bCountItem))) {
+			for (int i = 0; i < 3; ++i) {
+				Vector2 offs = mo.AngleToVector(FRandom(0, 360), mo.radius + FRandom(0, GetDefaultByType("PNP_PowerPerk").radius));
+				Actor perk = mo.Spawn("PNP_PowerPerk", mo.pos + (offs.x, offs.y, 0));
+				
+				if (perk) {
+					if (perk.CheckPosition(perk.pos.xy)) {
+						break;
+					}
+					
+					perk.Destroy();
+				}
+			}
+		}
+	}
+	
+	override void WorldThingDied(WorldEvent e) {
+		let mo = e.thing;
+		
+		if (mo.target is "PlayerPawn" && Random(0, 100) < sv_pnp_powerChance && powersSpawned < sv_pnp_maxPowers) {
+			mo.A_DropItem(powers[Random(0, powers.Size() - 1)]);
+			++powersSpawned;
+		}
+	}
+}
+
+class PNP_Power : CustomInventory {
+	int despawnTime;
+	
+	Default {
+		RenderStyle "Add";
+		
+		+FLOATBOB
+		+ZDOOMTRANS
+		+BRIGHT
+	}
+	
+	States {
+		Spawn:
+			#### # -1;
+			Stop;
+	}
+	
+	void PowerupAllPlayers(Class<Powerup> pup) {
+		for (int i = 0; i < MAXPLAYERS; i++) {
+			if (!PLAYERINGAME[i]) {
+				continue;
+			}
+			
+			let mo = players[i].mo;
+			
+			if (mo) {
+				mo.A_GiveInventory(pup);
+			}
+		}
+	}
+	
+	override void Tick() {
+		super.Tick();
+		
+		++despawnTime;
+		
+		if (despawnTime >= 1050) {
+			Destroy();
+		} else if (despawnTime >= 945) {
+			bInvisible = (despawnTime % 10) < 5;
+		} else if (despawnTime >= 700) {
+			bInvisible = (despawnTime % 20) < 10;
+		}
+	}
+}
+
+class PNP_Powerup : Powerup {
+	Default {
+		Powerup.Duration -30;
+	}
+	
+	override void OwnerDied() {}
+}
+
+class PNP_PowerNuke : PNP_Power {
+	Default {
+		Inventory.PickUpMessage "Kaboom!";
+	}
+	
+	States {
+		Spawn:
+			ZPOW D 0;
+			Goto Super::Spawn;
+	}
+	
+	override bool TryPickup(in out Actor toucher) {
+		A_StartSound("PNP_Power/nuke", CHAN_VOICE, CHANF_OVERLAP, 1, ATTN_NONE);
+		toucher.A_Quake(2, 20, 0, 720);
+		
+		BlockThingsIterator it = BlockThingsIterator.Create(self, 1384);
+		Actor mo;
+		
+		while (it.Next()) {
+			mo = it.thing;
+			
+			double dist = Distance3D(mo);
+			
+			if (dist < 1384) {
+				if (mo.bIsMonster && !mo.bBoss && mo.health > 0) {
+					mo.A_GiveInventory("PNP_EffectFire");
+					
+					let fire = PNP_EffectFire(mo.FindInventory("PNP_EffectFire"));
+					
+					if (fire) {
+						fire.drain = Max(fire.drain, Ceil((0.9 - Min(dist / 980, 0.87)) * Min(mo.SpawnHealth(), 144)));
+						fire.effectTick = Random(0, 5);
+					}
+				} else if (mo is "PlayerPawn") {
+					mo.A_SetBlend("White", 0.5, 35);
+				}
+			}
+		}
+		
+		GoAwayAndDie();
+		
+		return true;
+	}
+}
+
+class PNP_Effect : Inventory {
+	Default {
+		Inventory.MaxAmount 1;
+		
+		+Inventory.Undroppable
+		+Inventory.Untossable
+		+Inventory.AutoActivate
+	}
+	
+	States {
+		Use:
+			TNT1 A 0;
+			Fail;
+		
+		Pickup:
+			TNT1 A 0 {
+				return true;
+			}
+			
+			Stop;
+	}
+	
+	override void OwnerDied() {
+		Destroy();
+	}
+}
+
+class PNP_EffectFire : PNP_Effect {
+	int drain, effectTick;
+	
+	override void DoEffect() {
+		if ((effectTick % 2) == 0) {
+			double rad = owner.radius;
+			
+			owner.Spawn("PNP_ParticleFire", owner.pos + (FRandom(-rad, rad), FRandom(-rad, rad), FRandom(0, owner.height)));
+		}
+		
+		if (++effectTick > 5) {
+			owner.DamageMObj(null, null, drain, "Fire");
+			effectTick = 0;
+		}
+	}
+}
+
+class PNP_Particle : Actor {
+	Default {
+		Radius 1;
+		Height 1;
+		RenderStyle "Add";
+		
+		+NOTONAUTOMAP
+		+NOINTERACTION
+		+ZDOOMTRANS
+		+RANDOMIZE
+	}
+	
+	override void PostBeginPlay() {
+		super.PostBeginPlay();
+		bXFlip = Random(0, 1);
+		scale *= FRandom(1, 1.6);
+	}
+}
+
+class PNP_ParticleFire : PNP_Particle {
+	States {
+		Spawn:
+			ZFIR ABCDEF 4 Bright;
+			Stop;
+	}
+}
+
+class PNP_PowerInstakill : PNP_Power {
+	Default {
+		Inventory.PickUpMessage "Instakill!";
+	}
+	
+	States {
+		Spawn:
+			ZPOW A 0;
+			Goto Super::Spawn;
+	}
+	
+	override bool TryPickup(in out Actor toucher) {
+		A_StartSound("PNP_Power/instakill", CHAN_VOICE, CHANF_OVERLAP, 1, ATTN_NONE);
+		PowerupAllPlayers("PNP_PowerupInstakill");
+		GoAwayAndDie();
+		
+		return true;
+	}
+}
+
+class PNP_PowerupInstakill : PNP_Powerup {
+	Default {
+		Inventory.Icon "ZPOWA0";
+	}
+	
+	override void ModifyDamage(int damage, Name damageType, out int newDamage, bool passive, Actor inflictor, Actor source, int flags) {
+		if (!passive && damage > 0 && inflictor != owner && source != owner && !owner.IsFriend(inflictor) && !owner.IsFriend(source)) {
+			newDamage = 65535;
+		}
+	}
+}
+
+class PNP_PowerMaxAmmo : PNP_Power {
+	Default {
+		Inventory.PickUpMessage "Max Ammo!";
+	}
+	
+	States {
+		Spawn:
+			ZPOW C 0;
+			Goto Super::Spawn;
+	}
+	
+	override bool TryPickup(in out Actor toucher) {
+		A_StartSound("PNP_Power/maxammo", CHAN_VOICE, CHANF_OVERLAP, 1, ATTN_NONE);
+		
+		for (int i = 0; i < MAXPLAYERS; i++) {
+			if (!PLAYERINGAME[i]) {
+				continue;
+			}
+			
+			let player = players[i];
+			
+			if (player.health <= 0) {
+				continue;
+			}
+			
+			let mo = player.mo;
+			
+			if (mo) {
+				let weapons = player.weapons;
+				
+				if (weapons) {
+					for (int j = 0; j < 10; j++) {
+						int n = weapons.SlotSize(j);
+						
+						for (int k = 0; k < n; k++) {
+							class<Weapon> wep = weapons.GetWeapon(j, k);
+							
+							if (mo.CountInv(wep)) {
+								class<Ammo> amm = GetDefaultByType(wep).ammoType1;
+								
+								if (amm) {
+									let ammoObj = mo.FindInventory(amm);
+									
+									if (ammoObj) {
+										mo.SetInventory(amm, ammoObj.maxAmount);
+									} else {
+										mo.SetInventory(amm, GetDefaultByType(amm).maxAmount);
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+		
+		GoAwayAndDie();
+		
+		return true;
+	}
+}
+
+class PNP_PowerDeathMachine : PNP_Power {
+	Default {
+		Inventory.PickUpMessage "Death Machine!";
+	}
+	
+	States {
+		Spawn:
+			ZPOW E 0;
+			Goto Super::Spawn;
+	}
+	
+	override bool TryPickup(in out Actor toucher) {
+		toucher.A_StartSound("misc/w_pkup", CHAN_WEAPON, CHANF_OVERLAP | CHANF_MAYBE_LOCAL);
+		toucher.A_StartSound("PNP_Power/deathmachine", CHAN_VOICE, CHANF_OVERLAP | CHANF_LOCAL);
+		toucher.A_GiveInventory("PNP_PowerupDeathMachine");
+		GoAwayAndDie();
+		
+		return true;
+	}
+}
+
+class PNP_PowerupDeathMachine : PNP_Powerup {
+	Default {
+		Inventory.Icon "ZPOWE0";
+	}
+	
+	override void InitEffect() {
+		super.InitEffect();
+		
+		if (!owner) {
+			return;
+		}
+		
+		owner.A_GiveInventory("PNP_DeathMachine");
+		owner.A_SelectWeapon("PNP_DeathMachine");
+	}
+	
+	override void EndEffect() {
+		owner.A_TakeInventory("PNP_DeathMachine");
+	}
+	
+	override void OwnerDied() {
+		Destroy();
+	}
+}
+
+class PNP_DeathMachine : DoomWeapon {
+	Default {
+		Weapon.SelectionOrder 0;
+		Obituary "%o was turned into a red mist by %k's Death Machine.";
+		Tag "Death Machine";
+		
+		+WEAPON.BFG
+		+WEAPON.CHEATNOTWEAPON
+	}
+	
+	States
+	{
+		Ready:
+			ZDMA A 1 A_WeaponReady(WRF_DISABLESWITCH);
+			Loop;
+			
+		Deselect:
+			ZDMA A 1 A_Lower(12);
+			Loop;
+			
+		Select:
+			ZDMA A 1 A_Raise(12);
+			Loop;
+			
+		Fire:
+			ZDMA A 2 Bright {
+				A_FireBullets(5.6, 0, 3, 10, "BulletPuff");
+				A_StartSound("weapons/chngun", CHAN_WEAPON);
+				A_GunFlash();
+			}
+			
+			ZDMA B 2 Bright {
+				A_FireBullets(5.6, 0, 3, 10, "BulletPuff");
+				A_StartSound("weapons/chngun", CHAN_WEAPON);
+				A_GunFlash("Flash2");
+			}
+			
+			ZDMA B 0 A_Refire;
+			ZDMA ABABAB 2 A_Refire;
+			ZDMA ABABAB 3 A_Refire;
+			ZDMA ABABAB 4 A_Refire;
+			ZDMA ABAB 5 A_Refire;
+			Goto Ready;
+			
+		Flash:
+			ZDMA C 2 Bright A_Light1;
+			Goto LightDone;
+		
+		Flash2:
+			ZDMA D 2 Bright A_Light2;
+			Goto LightDone;
+	}
+}
+
+class PNP_PowerPerk : PNP_Power {
+	int rolls;
+	StateLabel result;
+	
+	Default {
+		Inventory.PickUpMessage "Perk-a-Cola! What will you get...?";
+	}
+	
+	States {
+		Spawn:
+			ZPOW B 0 NoDelay { invoker.despawnTime = -4294967290; }
+			Goto Super::Spawn;
+			
+		Pickup:
+			#### # 5;
+			#### # 0 A_ShufflePerk;
+			Loop;
+			
+		Result:
+			#### # 105 {
+				StateLabel st = invoker.result;
+				let who = invoker.target;
+				
+				if (st == "TeddyBear") {
+					if (who) {
+						who.A_Log("Better luck next time...", true);
+					}
+					
+					A_StartSound("PNP_Perk/laugh", CHAN_VOICE, CHANF_OVERLAP, 1, 0.4);
+					SetStateLabel("Unlucky");
+					
+					return;
+				}
+				
+				if (!who) {
+					return;
+				}
+				
+				Sound snd;
+				string msg;
+				class<Inventory> gimme;
+				
+				if (st == "DoubleTap") {
+					snd = "PNP_Perk/doubletap";
+					msg = "Double Tap Root Beer II! Faster and sharper bullets.";
+					gimme = "PNP_PerkDoubleTap";
+				} else if (st == "Juggernog") {
+					snd = "PNP_Perk/juggernog";
+					msg = "Juggernog! Increased damage resistance.";
+					gimme = "PNP_PerkJuggernog";
+				} else if (st == "QuickRevive") {
+					snd = "PNP_Perk/quickrevive";
+					msg = "Quick Revive! Autoheal and second chance.";
+					gimme = "PNP_PerkQuickRevive";
+				} else if (st == "SpeedCola") {
+					snd = "PNP_Perk/speedcola";
+					msg = "Speed Cola! Instant weapon equipping.";
+					gimme = "PNP_PerkSpeedCola";
+				} else if (st == "WidowsWine") {
+					snd = "PNP_Perk/widowswine";
+					msg = "Widow's Wine! Web explosions when damaged.";
+					gimme = "PNP_PerkWidowsWine";
+				} else if (st == "StaminUp") {
+					snd = "PNP_Perk/staminup";
+					msg = "Stamin-Up! Increased movement speed.";
+					gimme = "PNP_PerkStaminUp";
+				}
+				
+				who.A_StartSound(snd, CHAN_VOICE, CHANF_OVERLAP | CHANF_LOCAL | CHANF_UI, 1, ATTN_NONE);
+				who.A_Log(msg, true);
+				who.A_GiveInventory(gimme);
+			}
+			
+			#### # 1 A_FadeOut(0.08);
+			Goto Result + 1;
+			
+		Unlucky:
+			#### # 170;
+			#### # 110 A_StartSound("PNP_Perk/bye", CHAN_VOICE, CHANF_OVERLAP, 1, 0.4);
+			#### # 1 A_FadeOut(0.08);
+			Goto Unlucky + 2;
+			
+		DoubleTap:
+			ZPER D 0;
+			Goto Pickup;
+			
+		Juggernog:
+			ZPER A 0;
+			Goto Pickup;
+			
+		QuickRevive:
+			ZPER C 0;
+			Goto Pickup;
+			
+		SpeedCola:
+			ZPER B 0;
+			Goto Pickup;
+			
+		WidowsWine:
+			ZPER E 0;
+			Goto Pickup;
+			
+		StaminUp:
+			ZPER F 0;
+			Goto Pickup;
+			
+		TeddyBear:
+			ZPER G 0;
+			Goto Pickup;
+	}
+	
+	override bool TryPickup(in out Actor toucher) {
+		if (target) {
+			return false;
+		}
+		
+		int i;
+		Inventory item = toucher.inv;
+		
+		while (item != null) {
+			if (item is "PNP_Perk" && ++i >= sv_pnp_maxPerks) {
+				toucher.A_Print("You have too many perks!");
+				
+				return false;
+			}
+			
+			item = item.inv;
+		}
+		
+		A_StartSound("PNP_Perk/roll", CHAN_AUTO, CHANF_DEFAULT, 1, 0.4, 0, 0.25);
+		SetStateLabel("Pickup");
+		bZDoomTrans = false;
+		A_SetRenderStyle(1, STYLE_TRANSLUCENT);
+		target = toucher;
+		rolls = 35;
+		
+		return true;
+	}
+	
+	action void A_ShufflePerk() {
+		if (invoker.rolls <= 0) {
+			SetStateLabel("Result");
+			
+			return;
+		}
+		
+		StateLabel st;
+		string st2;
+		
+		switch (Random(0, 6)) {
+			case 0:	st = "DoubleTap"; st2 = "DoubleTap"; break;
+			case 1: st = "Juggernog"; st2 = "Juggernog"; break;
+			case 2: st = "QuickRevive"; st2 = "QuickRevive"; break;
+			case 3: st = "SpeedCola"; st2 = "SpeedCola"; break;
+			case 4: st = "WidowsWine"; st2 = "WidowsWine"; break;
+			case 5: st = "StaminUp"; st2 = "StaminUp"; break;
+			case 6: st = "TeddyBear"; st2 = "TeddyBear"; break;
+		}
+		
+		if (st != "TeddyBear") {
+			let who = invoker.target;
+			
+			if (who) {
+				string className = "PNP_Perk"..st2;
+				class<Inventory> cls = className;
+				
+				if (cls && who.CountInv(cls)) {
+					st = "TeddyBear";
+				}
+			}
+		}
+		
+		SetStateLabel(st);
+		invoker.result = st;
+		--invoker.rolls;
+	}
+	
+	override void Tick() {
+		super.Tick();
+		despawnTime = 0;
+	}
+}
+
+class PNP_Perk : Powerup {
+	Default {
+		Powerup.Duration 0x7FFFFFFF;
+		
+		+INVENTORY.HUBPOWER
+		+INVENTORY.PERSISTENTPOWER
+	}
+}
+
+class PNP_PerkJuggernog : PNP_Perk {
+	Default {
+		Inventory.Icon "ZPERA0";
+	}
+	
+	override void AbsorbDamage(int damage, Name damageType, out int newDamage, Actor inflictor, Actor source, int flags) {
+		newDamage = damage / 2;
+	}
+}
+
+class PNP_PerkSpeedCola : PNP_Perk {
+	Default {
+		Inventory.Icon "ZPERB0";
+	}
+	
+	bool InState(PSprite psp, State st) {
+		if (!psp.curState || !st) {
+			return false;
+		}
+		
+		return psp.CurState.InStateSequence(st);
+	}
+	
+	override void DoEffect() {
+		let wpn = owner.player.readyWeapon;
+		let psp = owner.player.GetPSprite(PSP_WEAPON);
+		
+		if (!wpn || !psp) {
+			return;
+		}
+		
+		if (InState(psp, wpn.GetDownState())) {
+			psp.y = WEAPONBOTTOM;
+		} else if (InState(psp, wpn.GetUpState())) {
+			psp.y = WEAPONTOP;
+		}
+	}
+}
+
+class PNP_PerkQuickRevive : PNP_Perk {
+	int regenTime;
+	
+	Default {
+		Inventory.Icon "ZPERC0";
+	}
+	
+	override void DoEffect() {
+		if (++regenTime >= 30) {
+			owner.GiveBody(1);
+			regenTime = 0;
+		}
+	}
+	
+	override void AbsorbDamage(int damage, name damageType, out int newDamage, Actor inflictor, Actor source, int flags) {
+		if ((owner.health - damage) <= 0) {
+			newDamage = 0;
+			owner.GiveBody(65535);
+			owner.A_SetBlend("White", 1, 20);
+			owner.A_StartSound("PNP/revive", CHAN_BODY, CHANF_OVERLAP);
+			Destroy();
+		}
+	}
+}
+
+class PNP_PerkDoubleTap : PNP_Perk {
+	Default {
+		Inventory.Icon "ZPERD0";
+	}
+	
+	override void DoEffect() {
+		let player = owner.player;
+		
+		if (!player) {
+			return;
+		}
+		
+		let wep = player.readyWeapon;
+		let psp = player.GetPSprite(PSP_WEAPON);
+		
+		if (!wep || !psp) {
+			return;
+		}
+		
+		let st = psp.curState;
+		
+		if (st.InStateSequence(wep.GetUpState()) || st.InStateSequence(wep.GetDownState())) {
+			return;
+		}
+		
+		if (psp.tics > 0) {
+			--psp.tics;
+			
+			while (psp.tics == 0) {
+				psp.SetState(psp.curState.nextState, true);
+			}
+		}
+	}
+	
+	override void ModifyDamage(int damage, Name damageType, out int newDamage, bool passive, Actor inflictor, Actor source, int flags) {
+		if (!passive && (inflictor is "BulletPuff" || inflictor is "Blood")) {
+			newDamage = damage * 2;
+		}
+	}
+}
+
+class PNP_PerkWidowsWine : PNP_Perk {
+	Default {
+		Inventory.Icon "ZPERE0";
+	}
+	
+	override void AbsorbDamage(int damage, Name damageType, out int newDamage, Actor inflictor, Actor source, int flags) {
+		if ((inflictor && inflictor.bIsMonster) || (source && source.bIsMonster)) {
+			BlockThingsIterator it = BlockThingsIterator.Create(owner, 512);
+			Actor mo;
+			
+			while (it.Next()) {
+				mo = it.thing;
+				
+				if (!mo.bIsMonster || mo.bBoss || mo.health <= 0) {
+					continue;
+				}
+				
+				bool splash;
+				double dist = owner.Distance3D(mo);
+				
+				if (dist <= 100) {
+					mo.A_GiveInventory("PNP_EffectSimply");
+					splash = true;
+				} else if (dist < 512) {
+					mo.A_GiveInventory("PNP_EffectSimply2");
+					splash = true;
+				}
+				
+				if (splash) {
+					mo.A_StartSound("PNP_Simply/splash", CHAN_BODY, CHANF_OVERLAP);
+				}
+			}
+			
+			owner.A_StartSound("PNP_Simply/explode", CHAN_BODY, CHANF_OVERLAP);
+			owner.Spawn("PNP_ParticleSimply", owner.pos + (0, 0, owner.height * 0.5));
+		}
+	}
+}
+
+mixin class PNP_Simply {
+	int freezeTime;
+	
+    bool TickSimply() {
+		if (((freezeTime--) % 3) == 0) {
+			double rad = owner.radius;
+			
+			owner.Spawn("PNP_ParticleSimply2", owner.pos + (FRandom(-rad, rad), FRandom(-rad, rad), FRandom(0, owner.height)));
+		}
+		
+		if (!freezeTime) {
+			Destroy();
+			
+			return true;
+		}
+		
+		return false;
+    }
+}
+
+class PNP_ParticleSimply : PNP_Particle {
+	States {
+		Spawn:
+			ZSIM ABC 4;
+			Stop;
+	}
+}
+
+class PNP_ParticleSimply2 : PNP_ParticleSimply {
+	override void PostBeginPlay() {
+		super.PostBeginPlay();
+		scale *= 0.25;
+	}
+}
+
+class PNP_EffectSimply : PNP_Effect {
+	mixin PNP_Simply;
+	
+	override void AttachToOwner(Actor other) {
+		super.AttachToOwner(other);
+		
+		let st = other.ResolveState("Pain");
+		
+		if (st) {
+			other.SetState(st);
+		}
+		
+		freezeTime = 350;
+	}
+	
+	override void DoEffect() {
+		if (!TickSimply()) {
+			++owner.tics;
+		}
+	}
+}
+
+class PNP_EffectSimply2 : PNP_Effect {
+	mixin PNP_Simply;
+	
+	override void AttachToOwner(Actor other) {
+		super.AttachToOwner(other);
+		
+		let st = other.ResolveState("Pain");
+		
+		if (st && Random(0, 1)) {
+			other.SetState(st);
+		}
+		
+		freezeTime = 350;
+	}
+	
+	override void DoEffect() {
+		if (!TickSimply() && (freezeTime % 2)) {
+			++owner.tics;
+		}
+	}
+}
+
+class PNP_PerkStaminUp : PNP_Perk {
+	Default {
+		Inventory.Icon "ZPERF0";
+	}
+	
+	override double GetSpeedFactor() {
+		return 1.25;
+	}
+	
+	override bool GetNoTeleportFreeze() {
+		return true;
+	}
+}
