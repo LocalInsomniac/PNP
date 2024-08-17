@@ -861,10 +861,10 @@ class PNP_PerkPHDFlopper : PNP_Perk {
 	}
 	
 	override void DoEffect() {
-		if (lastVelZ < -12 && owner.vel.z <= 0 && (owner.pos.z <= owner.floorZ || owner.bOnMObj)) {
+		if (lastVelZ < -16 && owner.vel.z <= 0 && (owner.pos.z <= owner.floorZ || owner.bOnMObj)) {
 			owner.A_StartSound("PNP_Flopper/explode", CHAN_BODY, CHANF_OVERLAP);
 			
-			int rad = 128 + (owner.radius * 2);
+			int rad = 192;
 			
 			owner.RadiusAttack(owner, rad, rad, "None", RADF_NOIMPACTDAMAGE | RADF_SOURCEISSPOT | RADF_THRUSTZ | RADF_NOALLIES);
 			owner.Spawn("PNP_ParticleFlopper", owner.pos);
