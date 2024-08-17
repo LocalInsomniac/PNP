@@ -413,7 +413,7 @@ class PNP_PowerPerk : PNP_Power {
 	
 	States {
 		Spawn:
-			ZPOW B 0 NoDelay { invoker.despawnTime = -4294967290; }
+			ZPOW B 0;
 			Goto Super::Spawn;
 			
 		Pickup:
@@ -477,13 +477,13 @@ class PNP_PowerPerk : PNP_Power {
 			}
 			
 			#### # 1 A_FadeOut(0.08);
-			Goto Result + 1;
+			Wait;
 			
 		Unlucky:
 			#### # 170;
 			#### # 110 A_StartSound("PNP_Perk/bye", CHAN_VOICE, CHANF_OVERLAP, 1, 0.4);
 			#### # 1 A_FadeOut(0.08);
-			Goto Unlucky + 2;
+			Wait;
 			
 		DoubleTap:
 			ZPER D 0;
@@ -619,8 +619,14 @@ class PNP_PerkSpeedCola : PNP_Perk {
 	}
 	
 	override void DoEffect() {
-		let wpn = owner.player.readyWeapon;
-		let psp = owner.player.GetPSprite(PSP_WEAPON);
+		let player = owner.player;
+		
+		if (!player) {
+			return;
+		}
+		
+		let wpn = player.readyWeapon;
+		let psp = player.GetPSprite(PSP_WEAPON);
 		
 		if (!wpn || !psp) {
 			return;
@@ -630,6 +636,12 @@ class PNP_PerkSpeedCola : PNP_Perk {
 			psp.y = WEAPONBOTTOM;
 		} else if (InState(psp, wpn.GetUpState())) {
 			psp.y = WEAPONTOP;
+			
+			let st = wpn.ResolveState("Ready");
+			
+			if (st) {
+				psp.SetState(st);
+			}
 		}
 	}
 }
