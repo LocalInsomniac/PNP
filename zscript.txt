@@ -469,6 +469,10 @@ class PNP_PowerPerk : PNP_Power {
 					snd = "PNP_Perk/staminup";
 					msg = "Stamin-Up! Increased movement speed.";
 					gimme = "PNP_PerkStaminUp";
+				} else if (st == "PHDFlopper") {
+					snd = "PNP_Perk/phdflopper";
+					msg = "PHD Flopper! Explosion immunity and explosive falls.";
+					gimme = "PNP_PerkPHDFlopper";
 				}
 				
 				who.A_StartSound(snd, CHAN_VOICE, CHANF_OVERLAP | CHANF_LOCAL | CHANF_UI, 1, ATTN_NONE);
@@ -512,6 +516,10 @@ class PNP_PowerPerk : PNP_Power {
 		TeddyBear:
 			ZPER G 0;
 			Goto Pickup;
+		
+		PHDFlopper:
+			ZPER H 0;
+			Goto Pickup;
 	}
 	
 	override bool TryPickup(in out Actor toucher) {
@@ -552,7 +560,7 @@ class PNP_PowerPerk : PNP_Power {
 		StateLabel st;
 		string st2;
 		
-		switch (Random(0, 6)) {
+		switch (Random(0, 7)) {
 			case 0:	st = "DoubleTap"; st2 = "DoubleTap"; break;
 			case 1: st = "Juggernog"; st2 = "Juggernog"; break;
 			case 2: st = "QuickRevive"; st2 = "QuickRevive"; break;
@@ -560,6 +568,7 @@ class PNP_PowerPerk : PNP_Power {
 			case 4: st = "WidowsWine"; st2 = "WidowsWine"; break;
 			case 5: st = "StaminUp"; st2 = "StaminUp"; break;
 			case 6: st = "TeddyBear"; st2 = "TeddyBear"; break;
+			case 7: st = "PHDFlopper"; st2 = "PHDFlopper"; break;
 		}
 		
 		if (st != "TeddyBear") {
@@ -841,5 +850,45 @@ class PNP_PerkStaminUp : PNP_Perk {
 	
 	override bool GetNoTeleportFreeze() {
 		return true;
+	}
+}
+
+class PNP_PerkPHDFlopper : PNP_Perk {
+	double lastVelZ;
+	
+	Default {
+		Inventory.Icon "ZPERH0";
+	}
+	
+	override void DoEffect() {
+		if (lastVelZ < -12 && owner.vel.z <= 0 && (owner.pos.z <= owner.floorZ || owner.bOnMObj)) {
+			owner.A_StartSound("PNP_Flopper/explode", CHAN_BODY, CHANF_OVERLAP);
+			
+			int rad = 128 + (owner.radius * 2);
+			
+			owner.RadiusAttack(owner, rad, rad, "None", RADF_NOIMPACTDAMAGE | RADF_SOURCEISSPOT | RADF_THRUSTZ | RADF_NOALLIES);
+			owner.Spawn("PNP_ParticleFlopper", owner.pos);
+		}
+		
+		lastVelZ = owner.vel.z;
+	}
+	
+	override void AbsorbDamage(int damage, Name damageType, out int newDamage, Actor inflictor, Actor source, int flags) {
+		if (flags & DMG_EXPLOSION) {
+			newDamage = 0;
+		}
+	}
+}
+
+class PNP_ParticleFlopper : PNP_Particle {
+	States {
+		Spawn:
+			ZEXP ABC 4;
+			Stop;
+	}
+	
+	override void PostBeginPlay() {
+		super.PostBeginPlay();
+		scale = (1, 1);
 	}
 }

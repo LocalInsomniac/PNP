@@ -20,6 +20,7 @@ PNP_Perk/quickrevive "sounds/perk/PNP_QUICKREVIVE.ogg"
 PNP_Perk/speedcola "sounds/perk/PNP_SPEEDCOLA.ogg"
 PNP_Perk/widowswine "sounds/perk/PNP_WIDOWSWINE.ogg"
 PNP_Perk/staminup "sounds/perk/PNP_STAMINUP.ogg"
+PNP_Perk/phdflopper "sounds/perk/PNP_PHDFLOPPER.ogg"
 
 PNP_Simply/explode "sounds/simply/PNP_SIMPLX.flac"
 PNP_Simply/splash1 "sounds/simply/PNP_SIMPLY.flac"
@@ -43,3 +44,5 @@ $random PNP_Simply/splash {
 	PNP_Simply/splash8
 	PNP_Simply/splash9
 }
+
+PNP_Flopper/explode "sounds/simply/PNP_SIMPLX.flac"

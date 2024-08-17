@@ -11,8 +11,8 @@ Megasphere) if there is enough space. When picked up, it will give you a unique
 perk or a Teddy Bear. The chances of getting a Teddy Bear will increase the more
 perks you have.
 
-**Currently implemented:** Double Tap Root Beer II, Juggernog, Speed Cola,
-Stamin-Up, Quick Revive, Widow's Wine
+**Currently implemented:** Double Tap Root Beer II, Juggernog, PHD Flopper,
+Speed Cola, Stamin-Up, Quick Revive, Widow's Wine
 
 ## Powerups
 
