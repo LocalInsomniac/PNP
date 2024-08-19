@@ -37,6 +37,21 @@ class PerksPowers : EventHandler {
 			++powersSpawned;
 		}
 	}
+	
+	override void PlayerEntered(PlayerEvent e) {
+		if (!(sv_pnp_perkStay || e.isReturn)) {
+			let mo = players[e.playerNumber].mo;
+			
+			if (mo) {
+				let item = mo.FindInventory("PNP_Perk", true);
+				
+				while (item) {
+					item.Destroy();
+					item = mo.FindInventory("PNP_Perk", true);
+				}
+			}
+		}
+	}
 }
 
 class PNP_Power : CustomInventory {

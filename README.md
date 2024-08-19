@@ -29,3 +29,5 @@ a player, in percentage. Default is `2`.
 - `sv_pnp_maxPowers`: How many powerups can spawn in a map. Default is `4`.
 
 - `sv_pnp_maxPerks`: How many perks a player can have. Default is `4`.
+
+- `sv_pnp_perkStay`: Whether or not perks can be carried across maps. Default is `false`.
