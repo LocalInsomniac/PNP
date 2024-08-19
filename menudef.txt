@@ -1,0 +1,11 @@
+OptionMenu "PNP_Options" {
+	Title "Perks 'n' Powers Options"
+    Slider "Powerup Drop Chance %", "sv_pnp_powerChance", 0, 100, 1
+	Slider "Max Powerup Spawns Per Map", "sv_pnp_maxPowers", 0, 10, 1
+	Slider "Max Perk Slots", "sv_pnp_maxPerks", 0, 10, 1
+	Option "Perks Carry Across Maps", "sv_pnp_perkStay", "YesNo"
+}
+
+AddOptionMenu "OptionsMenu" {
+    Submenu "Perks 'n' Powers Options", "PNP_Options"
+}

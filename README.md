@@ -1,4 +1,4 @@
-# PNP
+# Perks 'n' Powers
 
 A universal gameplay mod for GZDoom that adds Zombies perks and powerups from
 various Call of Duty games.
