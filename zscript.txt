@@ -13,7 +13,7 @@ class PerksPowers : EventHandler {
 	override void WorldThingSpawned(WorldEvent e) {
 		let mo = Inventory(e.thing);
 		
-		if (mo && (mo.bBigPowerup || (mo is "Health" && mo.amount >= 100) || (mo is "CustomInventory" && mo.bCountItem))) {
+		if (mo && !(mo is "PNP_Power") && mo.pos.xy != (0, 0) && (mo.bBigPowerup || (mo is "Health" && mo.amount >= 100) || (mo is "CustomInventory" && mo.bCountItem))) {
 			for (int i = 0; i < 3; ++i) {
 				Vector2 offs = mo.AngleToVector(FRandom(0, 360), mo.radius + FRandom(0, GetDefaultByType("PNP_PowerPerk").radius));
 				Actor perk = mo.Spawn("PNP_PowerPerk", mo.pos + (offs.x, offs.y, 0));
