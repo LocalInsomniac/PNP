@@ -1,0 +1,44 @@
+class PNP_PowerNuke : PNP_Power {
+	Default {
+		Inventory.PickUpMessage "Kaboom!";
+	}
+	
+	States {
+		Spawn:
+			ZPOW D 0;
+			Goto Super::Spawn;
+	}
+	
+	override bool TryPickup(in out Actor toucher) {
+		A_StartSound("PNP_Power/nuke", CHAN_VOICE, CHANF_OVERLAP, 1, ATTN_NONE);
+		toucher.A_Quake(2, 20, 0, 720);
+		
+		BlockThingsIterator it = BlockThingsIterator.Create(self, 1384);
+		Actor mo;
+		
+		while (it.Next()) {
+			mo = it.thing;
+			
+			double dist = Distance3D(mo);
+			
+			if (dist < 1384) {
+				if (mo.bIsMonster && !mo.bBoss && mo.health > 0) {
+					mo.A_GiveInventory("PNP_EffectFire");
+					
+					let fire = PNP_EffectFire(mo.FindInventory("PNP_EffectFire"));
+					
+					if (fire) {
+						fire.drain = Max(fire.drain, Ceil((0.9 - Min(dist / 980, 0.87)) * Min(mo.SpawnHealth(), 144)));
+						fire.effectTick = Random(0, 5);
+					}
+				} else if (mo is "PlayerPawn") {
+					mo.A_SetBlend("White", 0.5, 35);
+				}
+			}
+		}
+		
+		GoAwayAndDie();
+		
+		return true;
+	}
+}

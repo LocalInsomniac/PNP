@@ -1,0 +1,31 @@
+class PNP_PowerInstakill : PNP_Power {
+	Default {
+		Inventory.PickUpMessage "Instakill!";
+	}
+	
+	States {
+		Spawn:
+			ZPOW A 0;
+			Goto Super::Spawn;
+	}
+	
+	override bool TryPickup(in out Actor toucher) {
+		A_StartSound("PNP_Power/instakill", CHAN_VOICE, CHANF_OVERLAP, 1, ATTN_NONE);
+		PowerupAllPlayers("PNP_PowerupInstakill");
+		GoAwayAndDie();
+		
+		return true;
+	}
+}
+
+class PNP_PowerupInstakill : PNP_Powerup {
+	Default {
+		Inventory.Icon "ZPOWA0";
+	}
+	
+	override void ModifyDamage(int damage, Name damageType, out int newDamage, bool passive, Actor inflictor, Actor source, int flags) {
+		if (!passive && damage > 0 && inflictor != owner && source != owner && !owner.IsFriend(inflictor) && !owner.IsFriend(source)) {
+			newDamage = 65535;
+		}
+	}
+}

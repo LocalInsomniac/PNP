@@ -1,0 +1,9 @@
+class PNP_PerkJuggernog : PNP_Perk {
+	Default {
+		Inventory.Icon "ZPERA0";
+	}
+	
+	override void AbsorbDamage(int damage, Name damageType, out int newDamage, Actor inflictor, Actor source, int flags) {
+		newDamage = damage / 2;
+	}
+}

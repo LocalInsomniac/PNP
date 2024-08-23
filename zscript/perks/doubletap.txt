@@ -1,0 +1,40 @@
+class PNP_PerkDoubleTap : PNP_Perk {
+	Default {
+		Inventory.Icon "ZPERD0";
+	}
+	
+	override void DoEffect() {
+		let player = owner.player;
+		
+		if (!player) {
+			return;
+		}
+		
+		let wep = player.readyWeapon;
+		let psp = player.GetPSprite(PSP_WEAPON);
+		
+		if (!wep || !psp) {
+			return;
+		}
+		
+		let st = psp.curState;
+		
+		if (st.InStateSequence(wep.GetUpState()) || st.InStateSequence(wep.GetDownState())) {
+			return;
+		}
+		
+		if (psp.tics > 0) {
+			--psp.tics;
+			
+			while (psp.tics == 0) {
+				psp.SetState(psp.curState.nextState, true);
+			}
+		}
+	}
+	
+	override void ModifyDamage(int damage, Name damageType, out int newDamage, bool passive, Actor inflictor, Actor source, int flags) {
+		if (!passive && (inflictor is "BulletPuff" || inflictor is "Blood")) {
+			newDamage = damage * 2;
+		}
+	}
+}

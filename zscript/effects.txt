@@ -1,0 +1,107 @@
+class PNP_Effect : Inventory {
+	Default {
+		Inventory.MaxAmount 1;
+		
+		+Inventory.Undroppable
+		+Inventory.Untossable
+		+Inventory.AutoActivate
+	}
+	
+	States {
+		Use:
+			TNT1 A 0;
+			Fail;
+		
+		Pickup:
+			TNT1 A 0 {
+				return true;
+			}
+			
+			Stop;
+	}
+	
+	override void OwnerDied() {
+		Destroy();
+	}
+}
+
+class PNP_EffectFire : PNP_Effect {
+	int drain, effectTick;
+	
+	override void DoEffect() {
+		if ((effectTick % 2) == 0) {
+			double rad = owner.radius;
+			
+			owner.Spawn("PNP_ParticleFire", owner.pos + (FRandom(-rad, rad), FRandom(-rad, rad), FRandom(0, owner.height)));
+		}
+		
+		if (++effectTick > 5) {
+			owner.DamageMObj(null, null, drain, "Fire");
+			effectTick = 0;
+		}
+	}
+}
+
+mixin class PNP_Simply {
+	int freezeTime;
+	
+    bool TickSimply() {
+		if (((freezeTime--) % 3) == 0) {
+			double rad = owner.radius;
+			
+			owner.Spawn("PNP_ParticleSimply2", owner.pos + (FRandom(-rad, rad), FRandom(-rad, rad), FRandom(0, owner.height)));
+		}
+		
+		if (!freezeTime) {
+			Destroy();
+			
+			return true;
+		}
+		
+		return false;
+    }
+}
+
+class PNP_EffectSimply : PNP_Effect {
+	mixin PNP_Simply;
+	
+	override void AttachToOwner(Actor other) {
+		super.AttachToOwner(other);
+		
+		let st = other.ResolveState("Pain");
+		
+		if (st) {
+			other.SetState(st);
+		}
+		
+		freezeTime = 350;
+	}
+	
+	override void DoEffect() {
+		if (!TickSimply()) {
+			++owner.tics;
+		}
+	}
+}
+
+class PNP_EffectSimply2 : PNP_Effect {
+	mixin PNP_Simply;
+	
+	override void AttachToOwner(Actor other) {
+		super.AttachToOwner(other);
+		
+		let st = other.ResolveState("Pain");
+		
+		if (st && Random(0, 1)) {
+			other.SetState(st);
+		}
+		
+		freezeTime = 350;
+	}
+	
+	override void DoEffect() {
+		if (!TickSimply() && (freezeTime % 2)) {
+			++owner.tics;
+		}
+	}
+}

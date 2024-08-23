@@ -1,0 +1,53 @@
+class PNP_Power : CustomInventory {
+	int despawnTime;
+	
+	Default {
+		RenderStyle "Add";
+		
+		+FLOATBOB
+		+ZDOOMTRANS
+		+BRIGHT
+	}
+	
+	States {
+		Spawn:
+			#### # -1;
+			Stop;
+	}
+	
+	void PowerupAllPlayers(Class<Powerup> pup) {
+		for (int i = 0; i < MAXPLAYERS; i++) {
+			if (!PLAYERINGAME[i]) {
+				continue;
+			}
+			
+			let mo = players[i].mo;
+			
+			if (mo) {
+				mo.A_GiveInventory(pup);
+			}
+		}
+	}
+	
+	override void Tick() {
+		super.Tick();
+		
+		++despawnTime;
+		
+		if (despawnTime >= 1050) {
+			Destroy();
+		} else if (despawnTime >= 945) {
+			bInvisible = (despawnTime % 10) < 5;
+		} else if (despawnTime >= 700) {
+			bInvisible = (despawnTime % 20) < 10;
+		}
+	}
+}
+
+class PNP_Powerup : Powerup {
+	Default {
+		Powerup.Duration -30;
+	}
+	
+	override void OwnerDied() {}
+}

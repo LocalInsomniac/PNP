@@ -1,0 +1,40 @@
+class PNP_PerkSpeedCola : PNP_Perk {
+	Default {
+		Inventory.Icon "ZPERB0";
+	}
+	
+	bool InState(PSprite psp, State st) {
+		if (!psp.curState || !st) {
+			return false;
+		}
+		
+		return psp.CurState.InStateSequence(st);
+	}
+	
+	override void DoEffect() {
+		let player = owner.player;
+		
+		if (!player) {
+			return;
+		}
+		
+		let wpn = player.readyWeapon;
+		let psp = player.GetPSprite(PSP_WEAPON);
+		
+		if (!wpn || !psp) {
+			return;
+		}
+		
+		if (InState(psp, wpn.GetDownState())) {
+			psp.y = WEAPONBOTTOM;
+		} else if (InState(psp, wpn.GetUpState())) {
+			psp.y = WEAPONTOP;
+			
+			let st = wpn.ResolveState("Ready");
+			
+			if (st) {
+				psp.SetState(st);
+			}
+		}
+	}
+}

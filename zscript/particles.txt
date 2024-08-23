@@ -1,0 +1,54 @@
+class PNP_Particle : Actor {
+	Default {
+		Radius 1;
+		Height 1;
+		RenderStyle "Add";
+		
+		+NOTONAUTOMAP
+		+NOINTERACTION
+		+ZDOOMTRANS
+		+RANDOMIZE
+	}
+	
+	override void PostBeginPlay() {
+		super.PostBeginPlay();
+		bXFlip = Random(0, 1);
+		scale *= FRandom(1, 1.6);
+	}
+}
+
+class PNP_ParticleFire : PNP_Particle {
+	States {
+		Spawn:
+			ZFIR ABCDEF 4 Bright;
+			Stop;
+	}
+}
+
+class PNP_ParticleSimply : PNP_Particle {
+	States {
+		Spawn:
+			ZSIM ABC 4;
+			Stop;
+	}
+}
+
+class PNP_ParticleSimply2 : PNP_ParticleSimply {
+	override void PostBeginPlay() {
+		super.PostBeginPlay();
+		scale *= 0.25;
+	}
+}
+
+class PNP_ParticleFlopper : PNP_Particle {
+	States {
+		Spawn:
+			ZEXP ABC 4;
+			Stop;
+	}
+	
+	override void PostBeginPlay() {
+		super.PostBeginPlay();
+		scale = (1, 1);
+	}
+}

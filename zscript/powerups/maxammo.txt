@@ -1,0 +1,61 @@
+class PNP_PowerMaxAmmo : PNP_Power {
+	Default {
+		Inventory.PickUpMessage "Max Ammo!";
+	}
+	
+	States {
+		Spawn:
+			ZPOW C 0;
+			Goto Super::Spawn;
+	}
+	
+	override bool TryPickup(in out Actor toucher) {
+		A_StartSound("PNP_Power/maxammo", CHAN_VOICE, CHANF_OVERLAP, 1, ATTN_NONE);
+		
+		for (int i = 0; i < MAXPLAYERS; i++) {
+			if (!PLAYERINGAME[i]) {
+				continue;
+			}
+			
+			let player = players[i];
+			
+			if (player.health <= 0) {
+				continue;
+			}
+			
+			let mo = player.mo;
+			
+			if (mo) {
+				let weapons = player.weapons;
+				
+				if (weapons) {
+					for (int j = 0; j < 10; j++) {
+						int n = weapons.SlotSize(j);
+						
+						for (int k = 0; k < n; k++) {
+							class<Weapon> wep = weapons.GetWeapon(j, k);
+							
+							if (mo.CountInv(wep)) {
+								class<Ammo> amm = GetDefaultByType(wep).ammoType1;
+								
+								if (amm) {
+									let ammoObj = mo.FindInventory(amm);
+									
+									if (ammoObj) {
+										mo.SetInventory(amm, ammoObj.maxAmount);
+									} else {
+										mo.SetInventory(amm, GetDefaultByType(amm).maxAmount);
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+		
+		GoAwayAndDie();
+		
+		return true;
+	}
+}

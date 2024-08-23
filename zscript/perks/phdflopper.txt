@@ -1,0 +1,26 @@
+class PNP_PerkPHDFlopper : PNP_Perk {
+	double lastVelZ;
+	
+	Default {
+		Inventory.Icon "ZPERH0";
+	}
+	
+	override void DoEffect() {
+		if (lastVelZ < -16 && owner.vel.z <= 0 && (owner.pos.z <= owner.floorZ || owner.bOnMObj)) {
+			owner.A_StartSound("PNP_Flopper/explode", CHAN_BODY, CHANF_OVERLAP);
+			
+			int rad = 192;
+			
+			owner.RadiusAttack(owner, rad, rad, "None", RADF_NOIMPACTDAMAGE | RADF_SOURCEISSPOT | RADF_THRUSTZ | RADF_NOALLIES);
+			owner.Spawn("PNP_ParticleFlopper", owner.pos);
+		}
+		
+		lastVelZ = owner.vel.z;
+	}
+	
+	override void AbsorbDamage(int damage, Name damageType, out int newDamage, Actor inflictor, Actor source, int flags) {
+		if (flags & DMG_EXPLOSION) {
+			newDamage = 0;
+		}
+	}
+}

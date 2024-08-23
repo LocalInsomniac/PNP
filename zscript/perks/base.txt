@@ -1,0 +1,8 @@
+class PNP_Perk : Powerup {
+	Default {
+		Powerup.Duration 0x7FFFFFFF;
+		
+		+INVENTORY.HUBPOWER
+		+INVENTORY.PERSISTENTPOWER
+	}
+}

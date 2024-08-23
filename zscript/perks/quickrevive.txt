@@ -1,0 +1,24 @@
+class PNP_PerkQuickRevive : PNP_Perk {
+	int regenTime;
+	
+	Default {
+		Inventory.Icon "ZPERC0";
+	}
+	
+	override void DoEffect() {
+		if (++regenTime >= 30) {
+			owner.GiveBody(1);
+			regenTime = 0;
+		}
+	}
+	
+	override void AbsorbDamage(int damage, name damageType, out int newDamage, Actor inflictor, Actor source, int flags) {
+		if ((owner.health - damage) <= 0) {
+			newDamage = 0;
+			owner.GiveBody(65535);
+			owner.A_SetBlend("White", 1, 20);
+			owner.A_StartSound("PNP/revive", CHAN_BODY, CHANF_OVERLAP);
+			Destroy();
+		}
+	}
+}

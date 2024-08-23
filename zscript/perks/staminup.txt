@@ -1,0 +1,13 @@
+class PNP_PerkStaminUp : PNP_Perk {
+	Default {
+		Inventory.Icon "ZPERF0";
+	}
+	
+	override double GetSpeedFactor() {
+		return 1.25;
+	}
+	
+	override bool GetNoTeleportFreeze() {
+		return true;
+	}
+}

@@ -1,0 +1,38 @@
+class PNP_PerkWidowsWine : PNP_Perk {
+	Default {
+		Inventory.Icon "ZPERE0";
+	}
+	
+	override void AbsorbDamage(int damage, Name damageType, out int newDamage, Actor inflictor, Actor source, int flags) {
+		if ((inflictor && inflictor.bIsMonster) || (source && source.bIsMonster)) {
+			BlockThingsIterator it = BlockThingsIterator.Create(owner, 512);
+			Actor mo;
+			
+			while (it.Next()) {
+				mo = it.thing;
+				
+				if (!mo.bIsMonster || mo.bBoss || mo.health <= 0) {
+					continue;
+				}
+				
+				bool splash;
+				double dist = owner.Distance3D(mo);
+				
+				if (dist <= 100) {
+					mo.A_GiveInventory("PNP_EffectSimply");
+					splash = true;
+				} else if (dist < 512) {
+					mo.A_GiveInventory("PNP_EffectSimply2");
+					splash = true;
+				}
+				
+				if (splash) {
+					mo.A_StartSound("PNP_Simply/splash", CHAN_BODY, CHANF_OVERLAP);
+				}
+			}
+			
+			owner.A_StartSound("PNP_Simply/explode", CHAN_BODY, CHANF_OVERLAP);
+			owner.Spawn("PNP_ParticleSimply", owner.pos + (0, 0, owner.height * 0.5));
+		}
+	}
+}
