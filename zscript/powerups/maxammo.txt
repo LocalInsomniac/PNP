@@ -36,7 +36,20 @@ class PNP_PowerMaxAmmo : PNP_Power {
 							class<Weapon> wep = weapons.GetWeapon(j, k);
 							
 							if (mo.CountInv(wep)) {
-								class<Ammo> amm = GetDefaultByType(wep).ammoType1;
+								let def = GetDefaultByType(wep);
+								class<Ammo> amm = def.ammoType1;
+								
+								if (amm) {
+									let ammoObj = mo.FindInventory(amm);
+									
+									if (ammoObj) {
+										mo.SetInventory(amm, ammoObj.maxAmount);
+									} else {
+										mo.SetInventory(amm, GetDefaultByType(amm).maxAmount);
+									}
+								}
+								
+								amm = def.ammoType2;
 								
 								if (amm) {
 									let ammoObj = mo.FindInventory(amm);
