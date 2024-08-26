@@ -1,0 +1,48 @@
+class PNP_PowerFiresale : PNP_Power {
+	Default {
+		Inventory.PickUpMessage "Fire Sale!";
+	}
+	
+	States {
+		Spawn:
+			ZPOW F 0;
+			Goto Super::Spawn;
+	}
+	
+	override bool TryPickup(in out Actor toucher) {
+		if (Random(0, 2) < 2) {
+			A_StartSound("PNP_Power/firesale", CHAN_VOICE, CHANF_OVERLAP, 1, ATTN_NONE);
+			S_ChangeMusic("music/PNP_FIRESALE.ogg");
+		} else {
+			A_StartSound("PNP_Power/firesale2", CHAN_VOICE, CHANF_OVERLAP, 1, ATTN_NONE);
+			S_ChangeMusic("music/PNP_FIRESALE2.ogg");
+		}
+		
+		PowerupAllPlayers("PNP_PowerupFireSale");
+		GoAwayAndDie();
+		
+		return true;
+	}
+}
+
+class PNP_PowerupFireSale : PNP_Powerup {
+	Default {
+		Inventory.Icon "ZPOWF0";
+	}
+	
+	override void EndEffect() {
+		S_ChangeMusic(level.music);
+	}
+	
+	override bool HandlePickup(Inventory item) {
+		item.amount *= 2;
+		
+		if (item is "BasicArmorBonus") {
+			BasicArmorBonus(item).saveAmount *= 2;
+		} else if (item is "BasicArmorPickup") {
+			BasicArmorPickup(item).saveAmount *= 2;
+		}
+		
+		return false;
+	}
+}

@@ -19,7 +19,7 @@ Speed Cola, Stamin-Up, Quick Revive, Widow's Wine
 Any monster that is killed by a player has a low chance to drop a powerup,
 provided that the spawn limit per map has not been reached.
 
-**Currently implemented:** Death Machine, Instakill, Max Ammo, Nuke
+**Currently implemented:** Death Machine, Fire Sale, Instakill, Max Ammo, Nuke
 
 ## Console Commands
 

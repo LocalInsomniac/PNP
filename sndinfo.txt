@@ -3,6 +3,8 @@ PNP_Power/instakill "sounds/PNP_INSTAKILL.flac"
 PNP_Power/maxammo "sounds/PNP_MAXAMMO.flac"
 PNP_Power/nuke "sounds/PNP_NUKE.flac"
 PNP_Power/deathmachine "sounds/PNP_DEATHMACHINE.wav"
+PNP_Power/firesale "sounds/PNP_FIRESALE.flac"
+PNP_Power/firesale2 "sounds/PNP_FIRESALE2.flac"
 
 PNP_Perk/roll "sounds/PNP_MYSTERY.flac"
 PNP_Perk/laugh "sounds/PNP_LAUGH.wav"

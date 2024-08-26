@@ -67,6 +67,7 @@ class PerksPowers : EventHandler {
 
 #include "zscript/powerups/base.txt"
 #include "zscript/powerups/deathmachine.txt"
+#include "zscript/powerups/firesale.txt"
 #include "zscript/powerups/instakill.txt"
 #include "zscript/powerups/maxammo.txt"
 #include "zscript/powerups/nuke.txt"
