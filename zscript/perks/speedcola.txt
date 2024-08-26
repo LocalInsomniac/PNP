@@ -30,7 +30,7 @@ class PNP_PerkSpeedCola : PNP_Perk {
 		} else if (InState(psp, wpn.GetUpState())) {
 			psp.y = WEAPONTOP;
 			
-			let st = wpn.ResolveState("Ready");
+			let st = wpn.GetReadyState();
 			
 			if (st) {
 				psp.SetState(st);
