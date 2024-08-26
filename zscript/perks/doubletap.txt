@@ -1,4 +1,6 @@
 class PNP_PerkDoubleTap : PNP_Perk {
+	bool skipTic;
+	
 	Default {
 		Inventory.Icon "ZPERD0";
 	}
@@ -23,13 +25,15 @@ class PNP_PerkDoubleTap : PNP_Perk {
 			return;
 		}
 		
-		if (psp.tics > 0) {
+		if (skipTic && psp.tics > 0) {
 			--psp.tics;
 			
 			while (psp.tics == 0) {
 				psp.SetState(psp.curState.nextState, true);
 			}
 		}
+		
+		skipTic = !skipTic;
 	}
 	
 	override void ModifyDamage(int damage, Name damageType, out int newDamage, bool passive, Actor inflictor, Actor source, int flags) {
