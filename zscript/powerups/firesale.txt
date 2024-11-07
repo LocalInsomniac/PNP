@@ -31,7 +31,7 @@ class PNP_PowerupFireSale : PNP_Powerup {
 	}
 	
 	override void EndEffect() {
-		S_ChangeMusic(level.music);
+		S_ChangeMusic("*");
 	}
 	
 	override bool HandlePickup(Inventory item) {
